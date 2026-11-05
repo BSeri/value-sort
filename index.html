@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bússola de Valores</title>
+<meta name="description" content="Um jogo rápido para descobrir e ordenar seus 5 a 7 valores mais importantes. / A quick game to find and rank your top 5–7 values.">
+<meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171512" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23c4552d'/><path d='M50 18 L60 50 L50 82 L40 50 Z' fill='%23fffdf8'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f1e9;
+    --surface: #fffdf8;
+    --ink: #22201c;
+    --muted: #6d665c;
+    --line: #e3dbcd;
+    --accent: #c4552d;
+    --accent-ink: #fffdf8;
+    --e: #2f6b4f;
+    --e-soft: #e3efe7;
+    --m: #a8742a;
+    --m-soft: #f5ead6;
+    --l: #7d766b;
+    --l-soft: #ece7df;
+    --shadow: 0 1px 2px rgba(34,32,28,.06), 0 8px 24px rgba(34,32,28,.08);
+    --radius: 18px;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171512;
+      --surface: #221f1b;
+      --ink: #f2ece2;
+      --muted: #a59d90;
+      --line: #3a352e;
+      --accent: #e07a52;
+      --accent-ink: #1a1714;
+      --e: #6cbb93;
+      --e-soft: #1f3329;
+      --m: #dcaa58;
+      --m-soft: #362b1a;
+      --l: #9a9286;
+      --l-soft: #2c2924;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.5;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  header {
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-bottom: 14px;
+  }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--serif); font-weight: 600; font-size: 1.1rem;
+    background: none; border: 0; color: inherit; padding: 6px 0; cursor: pointer;
+  }
+  .brand svg { width: 26px; height: 26px; flex: none; }
+  .lang {
+    display: inline-flex; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px;
+  }
+  .lang button {
+    font: 700 .85rem var(--sans); letter-spacing: .04em;
+    min-width: 48px; min-height: 40px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+  main { flex: 1; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+  .screen { animation: fade .3s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  h1, h2 { font-family: var(--serif); font-weight: 600; line-height: 1.12; margin: 0; letter-spacing: -.01em; }
+  h1 { font-size: clamp(2.1rem, 8vw, 2.8rem); margin: 8px 0 14px; }
+  h2 { font-size: clamp(1.5rem, 6vw, 1.9rem); margin: 4px 0 10px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; font-weight: 700; color: var(--accent); margin: 18px 0 0; }
+  .lead { color: var(--muted); font-size: 1.08rem; margin: 0 0 22px; }
+  .muted { color: var(--muted); }
+
+  .steps { list-style: none; padding: 0; margin: 0 0 26px; display: grid; gap: 10px; counter-reset: s; }
+  .steps li {
+    counter-increment: s; display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  }
+  .steps li::before {
+    content: counter(s); flex: none; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: .9rem;
+    display: grid; place-items: center; margin-top: 1px;
+  }
+
+  .field-label { display: block; font-weight: 700; margin-bottom: 4px; }
+  .field-hint { color: var(--muted); font-size: .92rem; margin: 0 0 10px; }
+  .custom { display: grid; gap: 10px; margin-bottom: 26px; }
+  input[type="text"] {
+    width: 100%; font: 500 1.05rem var(--sans); color: var(--ink);
+    background: var(--surface); border: 1.5px dashed var(--line); border-radius: 14px;
+    padding: 15px 16px; min-height: 56px;
+  }
+  input[type="text"]:focus { outline: none; border-style: solid; border-color: var(--accent); }
+
+  .btn {
+    font: 700 1.08rem var(--sans); color: var(--ink);
+    border: 1.5px solid var(--line); background: var(--surface);
+    border-radius: var(--radius); min-height: 60px; padding: 14px 20px;
+    cursor: pointer; width: 100%;
+    transition: transform .08s ease, background .15s ease, border-color .15s ease, opacity .15s;
+    touch-action: manipulation;
+  }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn:focus-visible, .chip:focus-visible, .lang button:focus-visible, .brand:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); min-height: 68px; font-size: 1.15rem; box-shadow: var(--shadow); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); min-height: 52px; font-weight: 500; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  .btn-row .btn { flex: 1; }
+
+  .progress { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .progress > div { height: 100%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
+  .meta { display: flex; justify-content: space-between; color: var(--muted); font-size: .9rem; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+
+  .q { text-align: center; color: var(--muted); margin: 22px 0 10px; font-size: 1rem; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 24px;
+    box-shadow: var(--shadow); min-height: 170px; padding: 28px 20px;
+    display: grid; place-items: center; text-align: center;
+    font-family: var(--serif); font-size: clamp(2rem, 9vw, 2.7rem); font-weight: 600; line-height: 1.1;
+    animation: pop .28s cubic-bezier(.2,.9,.3,1.2) both; overflow-wrap: anywhere;
+  }
+  .card .tag { display: block; font: 700 .72rem var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+
+  .choices { display: grid; gap: 10px; margin-top: 18px; }
+  .choice { display: flex; align-items: center; justify-content: space-between; min-height: 72px; font-size: 1.15rem; text-align: left; }
+  .choice .count { font-weight: 500; font-size: .9rem; min-width: 34px; height: 28px; border-radius: 99px; display: grid; place-items: center; padding: 0 8px; font-variant-numeric: tabular-nums; }
+  .choice .key { font-weight: 500; font-size: .75rem; opacity: .6; margin-left: 8px; }
+  .choice.e { background: var(--e-soft); border-color: var(--e); color: var(--e); }
+  .choice.e .count { background: var(--e); color: var(--surface); }
+  .choice.m { background: var(--m-soft); border-color: var(--m); color: var(--m); }
+  .choice.m .count { background: var(--m); color: var(--surface); }
+  .choice.l { background: var(--l-soft); border-color: transparent; color: var(--l); }
+  .choice.l .count { background: var(--l); color: var(--surface); }
+
+  .group-label { font-weight: 700; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .group-label .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font: 600 1.02rem var(--sans); color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px;
+    min-height: 52px; padding: 10px 18px; cursor: pointer; touch-action: manipulation;
+    transition: transform .08s ease, background .15s ease;
+  }
+  .chip:active { transform: scale(.96); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip[aria-pressed="true"]::before { content: "✓ "; }
+  .sticky-bar {
+    position: sticky; bottom: 0; padding: 14px 0 max(14px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 70%, transparent); margin-top: 18px;
+  }
+  .counter { text-align: center; font-weight: 700; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+  .counter.ok { color: var(--e); }
+
+  .duel { display: grid; gap: 12px; margin-top: 18px; }
+  .duel .btn {
+    min-height: 128px; font-family: var(--serif); font-size: clamp(1.6rem, 7vw, 2.1rem); font-weight: 600;
+    box-shadow: var(--shadow); animation: pop .28s cubic-bezier(.2,.9,.3,1.2) both; overflow-wrap: anywhere;
+  }
+  .duel .btn:hover { border-color: var(--accent); }
+  .duel .btn + .or + .btn { animation-delay: .05s; }
+  .or { text-align: center; font-family: var(--serif); font-style: italic; color: var(--muted); margin: -2px 0; }
+  .hint { text-align: center; color: var(--muted); font-size: .92rem; margin-top: 14px; }
+
+  .ranked { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .ranked li {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px 18px; animation: pop .35s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+  .ranked .n { font-family: var(--serif); font-weight: 600; font-size: 1.5rem; color: var(--accent); width: 28px; text-align: center; flex: none; font-variant-numeric: tabular-nums; }
+  .ranked .v { font-family: var(--serif); font-weight: 600; font-size: 1.35rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .ranked li.first { padding: 20px 18px; border-color: var(--accent); box-shadow: var(--shadow); }
+  .ranked li.first .v { font-size: 1.7rem; }
+  .ranked.ext li { background: transparent; border-style: dashed; padding: 10px 18px; }
+  .ranked.ext .v { font-size: 1.15rem; }
+  .ranked.ext .n { color: var(--muted); font-size: 1.2rem; }
+  .section-label { font-weight: 700; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+  .actions { display: grid; gap: 10px; margin-top: 28px; }
+  .toast {
+    position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 12px 20px; border-radius: 999px; font-weight: 700;
+    box-shadow: var(--shadow); animation: fade .2s ease both; z-index: 10;
+  }
+  .footer-link { display: block; text-align: center; margin-top: 18px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <button class="brand" data-action="home" aria-label="Home">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="var(--accent)"/><path d="M50 18 L60 50 L50 82 L40 50 Z" fill="var(--surface)"/><circle cx="50" cy="50" r="5" fill="var(--accent)"/></svg>
+      <span id="brand-name"></span>
+    </button>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="pt" aria-pressed="false">PT</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+<main><div class="wrap" id="app"></div></main>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Data ----------
+  const VALUES = [
+    ["Acolhimento", "Welcoming"], ["Ambição", "Ambition"], ["Amizade", "Friendship"],
+    ["Aprendizado", "Learning"], ["Assertividade", "Assertiveness"], ["Autenticidade", "Authenticity"],
+    ["Autocuidado", "Self-care"], ["Autonomia", "Autonomy"], ["Aventura", "Adventure"],
+    ["Bom humor", "Good humor"], ["Coerência", "Coherence"], ["Companheirismo", "Companionship"],
+    ["Compaixão", "Compassion"], ["Confiabilidade", "Reliability"], ["Contribuição", "Contribution"],
+    ["Coragem", "Courage"], ["Criatividade", "Creativity"], ["Cuidado", "Care"],
+    ["Curiosidade", "Curiosity"], ["Dedicação", "Dedication"], ["Disciplina", "Discipline"],
+    ["Diversão", "Fun"], ["Espontaneidade", "Spontaneity"], ["Estabilidade", "Stability"],
+    ["Excelência", "Excellence"], ["Flexibilidade", "Flexibility"], ["Generosidade", "Generosity"],
+    ["Gratidão", "Gratitude"], ["Honestidade", "Honesty"], ["Humildade", "Humility"],
+    ["Independência", "Independence"], ["Iniciativa", "Initiative"], ["Integridade", "Integrity"],
+    ["Justiça", "Justice"], ["Lealdade", "Loyalty"], ["Liberdade", "Freedom"],
+    ["Liderança", "Leadership"], ["Ordem", "Order"], ["Paciência", "Patience"],
+    ["Parceria", "Partnership"], ["Persistência", "Persistence"], ["Presença", "Presence"],
+    ["Prosperidade", "Prosperity"], ["Reconhecimento", "Recognition"], ["Respeito", "Respect"],
+    ["Responsabilidade", "Responsibility"], ["Segurança", "Security"], ["Sensibilidade", "Sensitivity"],
+    ["Serenidade", "Serenity"], ["Tradição", "Tradition"], ["Vitalidade", "Vitality"],
+    ["Zelo", "Diligence"]
+  ];
+  const MIN = 5, MAX = 7;
+
+  const STR = {
+    pt: {
+      brand: "Bússola de Valores",
+      eyebrow: "Um jogo de 5 minutos",
+      title: "Quais valores guiam a sua vida?",
+      lead: "Descubra e ordene os seus 5 valores mais importantes (até 7) em três passos rápidos.",
+      step1: "<b>Classifique</b> cada valor: essencial, importante ou menos importante.",
+      step2: "<b>Escolha</b> seus finalistas: de 5 a 7 valores.",
+      step3: "<b>Compare</b> dois a dois até formar o seu ranking.",
+      customLabel: "Faltou algum valor?",
+      customHint: "Adicione até dois valores seus (opcional).",
+      customPh: "Seu valor",
+      start: "Começar",
+      sortQ: "Quão importante é este valor para você?",
+      e: "Essencial", m: "Importante", l: "Menos importante",
+      yours: "Seu valor",
+      undo: "↶ Desfazer",
+      restart: "Recomeçar do zero",
+      confirmRestart: "Apagar seu progresso e recomeçar?",
+      selManyTitle: "Agora, fique só com o essencial",
+      selMany: (n) => `Você marcou <b>${n}</b> valores como essenciais. Escolha os que mais importam: de ${MIN} a ${MAX}.`,
+      selFewTitle: "Complete seus finalistas",
+      selFew: (n) => `Você marcou <b>${n}</b> como ${n === 1 ? "essencial" : "essenciais"}. Escolha mais alguns para chegar a pelo menos ${MIN}.`,
+      counter: (n) => `${n} de ${MAX} escolhidos`,
+      needMore: (n) => `Escolha mais ${n}`,
+      maxReached: `Máximo de ${MAX}. Desmarque um para trocar.`,
+      cont: "Continuar",
+      rankQ: "Qual é mais importante para você?",
+      or: "ou",
+      rankHint: "Na dúvida, siga sua primeira intuição.",
+      placed: (a, b) => `${a} de ${b} posicionados`,
+      cmp: (n) => `Comparação ${n}`,
+      resultEyebrow: "Seu resultado",
+      resultTitle: "Seus valores, em ordem",
+      top: "Top 5",
+      ext: "Estendido",
+      copy: "Copiar lista",
+      share: "Compartilhar",
+      copied: "Lista copiada!",
+      rerank: "Refazer comparações",
+      again: "Jogar de novo",
+      shareHeader: "Meus valores mais importantes:",
+    },
+    en: {
+      brand: "Values Compass",
+      eyebrow: "A 5-minute game",
+      title: "Which values guide your life?",
+      lead: "Find and rank your 5 most important values (up to 7) in three quick steps.",
+      step1: "<b>Sort</b> each value: essential, important or less important.",
+      step2: "<b>Choose</b> your finalists: 5 to 7 values.",
+      step3: "<b>Compare</b> them two at a time to build your ranking.",
+      customLabel: "Missing a value?",
+      customHint: "Add up to two of your own (optional).",
+      customPh: "Your value",
+      start: "Start",
+      sortQ: "How important is this value to you?",
+      e: "Essential", m: "Important", l: "Less important",
+      yours: "Your value",
+      undo: "↶ Undo",
+      restart: "Start over",
+      confirmRestart: "Erase your progress and start over?",
+      selManyTitle: "Now keep only the essentials",
+      selMany: (n) => `You marked <b>${n}</b> values as essential. Pick the ones that matter most: ${MIN} to ${MAX}.`,
+      selFewTitle: "Complete your finalists",
+      selFew: (n) => `You marked <b>${n}</b> as essential. Pick a few more to reach at least ${MIN}.`,
+      counter: (n) => `${n} of ${MAX} chosen`,
+      needMore: (n) => `Pick ${n} more`,
+      maxReached: `Maximum is ${MAX}. Unselect one to swap.`,
+      cont: "Continue",
+      rankQ: "Which matters more to you?",
+      or: "or",
+      rankHint: "If it's hard, go with your gut.",
+      placed: (a, b) => `${a} of ${b} placed`,
+      cmp: (n) => `Comparison ${n}`,
+      resultEyebrow: "Your result",
+      resultTitle: "Your values, in order",
+      top: "Top 5",
+      ext: "Extended",
+      copy: "Copy list",
+      share: "Share",
+      copied: "List copied!",
+      rerank: "Redo comparisons",
+      again: "Play again",
+      shareHeader: "My most important values:",
+    }
+  };
+
+  // ---------- State ----------
+  const KEY = "valuesort.v1";
+  const LANG_KEY = "valuesort.lang";
+  const fresh = () => ({
+    screen: "intro",
+    custom: ["", ""],
+    deck: [], i: 0,
+    piles: { e: [], m: [], l: [] },
+    selected: [],
+    rank: null,
+    final: [],
+    hist: []
+  });
+
+  let S = fresh();
+  let lang = "pt";
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && saved.screen) S = Object.assign(fresh(), saved);
+  } catch (e) {}
+  try {
+    const l = localStorage.getItem(LANG_KEY);
+    lang = l === "en" || l === "pt" ? l : ((navigator.language || "").toLowerCase().startsWith("en") ? "en" : "pt");
+  } catch (e) {}
+
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  const snapshot = () => { const { hist, ...rest } = S; return JSON.stringify(rest); };
+  const pushHist = () => { S.hist.push(snapshot()); if (S.hist.length > 150) S.hist.shift(); };
+  const undo = () => {
+    const prev = S.hist.pop();
+    if (!prev) return;
+    const hist = S.hist;
+    S = Object.assign(fresh(), JSON.parse(prev), { hist });
+  };
+
+  // ---------- Helpers ----------
+  const t = (k, ...a) => { const v = STR[lang][k]; return typeof v === "function" ? v(...a) : v; };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isCustom = (id) => id[0] === "c";
+  const label = (id) => isCustom(id) ? (S.custom[+id.slice(1)] || "—") : VALUES[+id.slice(1)][lang === "pt" ? 0 : 1];
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const byLabel = (a, b) => label(a).localeCompare(label(b), lang);
+
+  function toast(msg) {
+    document.querySelectorAll(".toast").forEach((n) => n.remove());
+    const el = document.createElement("div");
+    el.className = "toast"; el.setAttribute("role", "status"); el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+  }
+
+  // ---------- Flow ----------
+  function start() {
+    S.custom = S.custom.map((c) => c.trim());
+    const ids = VALUES.map((_, i) => "v" + i);
+    S.custom.forEach((c, i) => { if (c) ids.push("c" + i); });
+    Object.assign(S, { deck: shuffle(ids), i: 0, piles: { e: [], m: [], l: [] }, selected: [], rank: null, final: [], hist: [], screen: "sort" });
+  }
+
+  function afterSort() {
+    const n = S.piles.e.length;
+    if (n >= MIN && n <= MAX) return startRank(S.piles.e);
+    S.selected = n < MIN ? S.piles.e.slice() : [];
+    S.screen = "select";
+  }
+
+  function startRank(items) {
+    items = shuffle(items);
+    S.rank = { items, sorted: [items[0]], k: 1, lo: 0, hi: 1, count: 0 };
+    S.screen = "rank";
+    if (items.length < 2) finishRank();
+  }
+
+  function finishRank() {
+    S.final = S.rank.sorted.slice();
+    S.screen = "result";
+  }
+
+  // Binary insertion sort, one human comparison at a time.
+  function pick(candidateWins) {
+    const r = S.rank;
+    const mid = (r.lo + r.hi) >> 1;
+    if (candidateWins) r.hi = mid; else r.lo = mid + 1;
+    r.count++;
+    if (r.lo >= r.hi) {
+      r.sorted.splice(r.lo, 0, r.items[r.k]);
+      r.k++;
+      r.lo = 0; r.hi = r.sorted.length;
+      if (r.k >= r.items.length) finishRank();
+    }
+  }
+
+  function shareText() {
+    const lines = S.final.map((id, i) => `${i + 1}. ${label(id)}`);
+    return `${t("shareHeader")}\n${lines.join("\n")}`;
+  }
+
+  async function copy() {
+    const text = shareText();
+    try { await navigator.clipboard.writeText(text); toast(t("copied")); return; } catch (e) {}
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(t("copied")); } catch (e) {}
+    ta.remove();
+  }
+
+  // ---------- Screens ----------
+  const screens = {
+    intro() {
+      return `<section class="screen">
+        <p class="eyebrow">${t("eyebrow")}</p>
+        <h1>${t("title")}</h1>
+        <p class="lead">${t("lead")}</p>
+        <ol class="steps"><li><span>${t("step1")}</span></li><li><span>${t("step2")}</span></li><li><span>${t("step3")}</span></li></ol>
+        <div class="custom">
+          <div><label class="field-label" for="c0">${t("customLabel")}</label><p class="field-hint">${t("customHint")}</p></div>
+          <input type="text" id="c0" data-custom="0" maxlength="40" autocomplete="off" placeholder="${t("customPh")} 1" value="${esc(S.custom[0])}">
+          <input type="text" id="c1" data-custom="1" maxlength="40" autocomplete="off" placeholder="${t("customPh")} 2" value="${esc(S.custom[1])}">
+        </div>
+        <button class="btn primary" data-action="start">${t("start")} →</button>
+      </section>`;
+    },
+
+    sort() {
+      const id = S.deck[S.i];
+      const total = S.deck.length;
+      const c = (p) => S.piles[p].length;
+      return `<section class="screen">
+        <div class="progress" aria-hidden="true"><div style="width:${(S.i / total) * 100}%"></div></div>
+        <p class="meta"><span>${S.i + 1} / ${total}</span><span>${t("e")}: ${c("e")}</span></p>
+        <p class="q">${t("sortQ")}</p>
+        <div class="card" aria-live="polite">${isCustom(id) ? `<span><span class="tag">${t("yours")}</span>${esc(label(id))}</span>` : esc(label(id))}</div>
+        <div class="choices">
+          <button class="btn choice e" data-action="pile" data-pile="e"><span>${t("e")}<span class="key">1</span></span><span class="count">${c("e")}</span></button>
+          <button class="btn choice m" data-action="pile" data-pile="m"><span>${t("m")}<span class="key">2</span></span><span class="count">${c("m")}</span></button>
+          <button class="btn choice l" data-action="pile" data-pile="l"><span>${t("l")}<span class="key">3</span></span><span class="count">${c("l")}</span></button>
+        </div>
+        <div class="btn-row"><button class="btn ghost" data-action="undo" ${S.hist.length ? "" : "disabled"}>${t("undo")}</button></div>
+      </section>`;
+    },
+
+    select() {
+      const n = S.piles.e.length;
+      const many = n > MAX;
+      const groups = many ? [["e", S.piles.e]] : [["e", S.piles.e], ["m", S.piles.m]];
+      if (!many && n + S.piles.m.length < MIN) groups.push(["l", S.piles.l]);
+      const sel = S.selected.length;
+      const ok = sel >= MIN && sel <= MAX;
+      const chips = (ids) => ids.slice().sort(byLabel).map((id) =>
+        `<button class="chip" data-action="toggle" data-id="${id}" aria-pressed="${S.selected.includes(id)}">${esc(label(id))}</button>`).join("");
+      return `<section class="screen">
+        <h2>${t(many ? "selManyTitle" : "selFewTitle")}</h2>
+        <p class="lead">${t(many ? "selMany" : "selFew", n)}</p>
+        ${groups.filter(([, ids]) => ids.length).map(([p, ids]) => `
+          <div class="group-label" style="color:var(--${p})"><span class="dot" style="background:var(--${p})"></span>${t(p)} · ${ids.length}</div>
+          <div class="chips">${chips(ids)}</div>`).join("")}
+        <div class="sticky-bar">
+          <div class="counter ${ok ? "ok" : ""}">${sel < MIN ? t("needMore", MIN - sel) : t("counter", sel)}</div>
+          <button class="btn primary" data-action="confirmSelect" ${ok ? "" : "disabled"}>${t("cont")} →</button>
+          <div class="btn-row"><button class="btn ghost" data-action="undo" ${S.hist.length ? "" : "disabled"}>${t("undo")}</button></div>
+        </div>
+      </section>`;
+    },
+
+    rank() {
+      const r = S.rank;
+      const mid = (r.lo + r.hi) >> 1;
+      const cand = r.items[r.k], other = r.sorted[mid];
+      const swap = (r.k + mid + r.count) % 2 === 1;
+      const a = swap ? ["other", other] : ["cand", cand];
+      const b = swap ? ["cand", cand] : ["other", other];
+      const total = r.items.length;
+      return `<section class="screen">
+        <div class="progress" aria-hidden="true"><div style="width:${((r.k - 1) / (total - 1)) * 100}%"></div></div>
+        <p class="meta"><span>${t("placed", r.k, total)}</span><span>${t("cmp", r.count + 1)}</span></p>
+        <p class="q">${t("rankQ")}</p>
+        <div class="duel">
+          <button class="btn" data-action="pick" data-win="${a[0]}">${esc(label(a[1]))}</button>
+          <div class="or">${t("or")}</div>
+          <button class="btn" data-action="pick" data-win="${b[0]}">${esc(label(b[1]))}</button>
+        </div>
+        <p class="hint">${t("rankHint")}</p>
+        <div class="btn-row"><button class="btn ghost" data-action="undo" ${S.hist.length ? "" : "disabled"}>${t("undo")}</button></div>
+      </section>`;
+    },
+
+    result() {
+      const top = S.final.slice(0, MIN), ext = S.final.slice(MIN);
+      const li = (id, i, cls = "") => `<li class="${cls}" style="animation-delay:${i * 60}ms"><span class="n">${i + 1}</span><span class="v">${esc(label(id))}</span></li>`;
+      return `<section class="screen">
+        <p class="eyebrow">${t("resultEyebrow")}</p>
+        <h1>${t("resultTitle")}</h1>
+        <div class="section-label">${t("top")}</div>
+        <ol class="ranked">${top.map((id, i) => li(id, i, i === 0 ? "first" : "")).join("")}</ol>
+        ${ext.length ? `<div class="section-label">${t("ext")}</div>
+        <ol class="ranked ext">${ext.map((id, i) => li(id, i + MIN)).join("")}</ol>` : ""}
+        <div class="actions">
+          <button class="btn primary" data-action="copy">${t("copy")}</button>
+          ${navigator.share ? `<button class="btn" data-action="share">${t("share")}</button>` : ""}
+          <div class="btn-row">
+            <button class="btn" data-action="rerank">${t("rerank")}</button>
+            <button class="btn" data-action="again">${t("again")}</button>
+          </div>
+        </div>
+      </section>`;
+    }
+  };
+
+  // ---------- Render ----------
+  const app = document.getElementById("app");
+  function render(scrollTop = true) {
+    document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
+    document.title = t("brand");
+    document.getElementById("brand-name").textContent = t("brand");
+    document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+    let html = screens[S.screen]();
+    if (S.screen !== "intro" && S.screen !== "result") {
+      html = html.replace(/<\/section>$/, `<button class="btn ghost footer-link" data-action="restart">${t("restart")}</button></section>`);
+    }
+    app.innerHTML = html;
+    if (scrollTop) window.scrollTo(0, 0);
+    save();
+  }
+
+  // ---------- Events ----------
+  const actions = {
+    home() { if (S.screen === "intro") return; if (confirm(t("confirmRestart"))) { const custom = S.custom; S = fresh(); S.custom = custom; render(); } },
+    restart() { actions.home(); },
+    start() { start(); render(); },
+    pile(el) {
+      pushHist();
+      S.piles[el.dataset.pile].push(S.deck[S.i]);
+      S.i++;
+      if (S.i >= S.deck.length) afterSort();
+      render(false);
+    },
+    undo() { undo(); render(false); },
+    toggle(el) {
+      const id = el.dataset.id;
+      const at = S.selected.indexOf(id);
+      if (at >= 0) S.selected.splice(at, 1);
+      else if (S.selected.length >= MAX) { toast(t("maxReached")); return; }
+      else S.selected.push(id);
+      const y = window.scrollY;
+      render(false);
+      window.scrollTo(0, y);
+    },
+    confirmSelect() { pushHist(); startRank(S.selected); render(); },
+    pick(el) { pushHist(); pick(el.dataset.win === "cand"); render(false); },
+    copy() { copy(); },
+    share() { navigator.share({ text: shareText() }).catch(() => {}); },
+    rerank() { pushHist(); startRank(S.final); render(); },
+    again() { const custom = S.custom; S = fresh(); S.custom = custom; render(); }
+  };
+
+  document.addEventListener("click", (ev) => {
+    const langBtn = ev.target.closest("[data-lang]");
+    if (langBtn) {
+      lang = langBtn.dataset.lang;
+      try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+      const y = window.scrollY; render(false); window.scrollTo(0, y);
+      return;
+    }
+    const el = ev.target.closest("[data-action]");
+    if (el && !el.disabled && actions[el.dataset.action]) actions[el.dataset.action](el);
+  });
+
+  document.addEventListener("input", (ev) => {
+    const i = ev.target.dataset && ev.target.dataset.custom;
+    if (i !== undefined) { S.custom[+i] = ev.target.value; save(); }
+  });
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.target.matches("input, textarea")) {
+      if (ev.key === "Enter" && S.screen === "intro") actions.start();
+      return;
+    }
+    if ((ev.key === "z" && (ev.metaKey || ev.ctrlKey)) || ev.key === "Backspace") {
+      if (S.hist.length && S.screen !== "intro" && S.screen !== "result") { ev.preventDefault(); actions.undo(); }
+      return;
+    }
+    if (S.screen === "sort") {
+      const p = { "1": "e", "2": "m", "3": "l" }[ev.key];
+      if (p) actions.pile({ dataset: { pile: p } });
+    } else if (S.screen === "rank") {
+      const btns = app.querySelectorAll('[data-action="pick"]');
+      if (ev.key === "ArrowLeft" || ev.key === "ArrowUp" || ev.key === "1") btns[0].click();
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown" || ev.key === "2") btns[1].click();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
