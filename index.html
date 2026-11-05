@@ -261,7 +261,8 @@
     ["Serenidade", "Serenity"], ["Tradição", "Tradition"], ["Vitalidade", "Vitality"],
     ["Zelo", "Diligence"]
   ];
-  const MIN = 5, MAX = 7;
+  // MIN–MAX finalists go into pairwise comparison; only the top KEEP get a precise order.
+  const MIN = 5, MAX = 12, KEEP = 7;
 
   const STR = {
     pt: {
@@ -270,7 +271,7 @@
       title: "Quais valores guiam a sua vida?",
       lead: "Descubra e ordene os seus 5 valores mais importantes (até 7) em três passos rápidos.",
       step1: "<b>Classifique</b> cada valor: essencial, importante ou menos importante.",
-      step2: "<b>Escolha</b> seus finalistas: de 5 a 7 valores.",
+      step2: `<b>Escolha</b> seus finalistas: de ${MIN} a ${MAX} valores.`,
       step3: "<b>Compare</b> dois a dois até formar o seu ranking.",
       customLabel: "Faltou algum valor?",
       customHint: "Adicione até dois valores seus (opcional).",
@@ -299,6 +300,7 @@
       resultTitle: "Seus valores, em ordem",
       top: "Top 5",
       ext: "Estendido",
+      rest: "Outros finalistas (sem ordem)",
       copy: "Copiar lista",
       share: "Compartilhar",
       copied: "Lista copiada!",
@@ -312,7 +314,7 @@
       title: "Which values guide your life?",
       lead: "Find and rank your 5 most important values (up to 7) in three quick steps.",
       step1: "<b>Sort</b> each value: essential, important or less important.",
-      step2: "<b>Choose</b> your finalists: 5 to 7 values.",
+      step2: `<b>Choose</b> your finalists: ${MIN} to ${MAX} values.`,
       step3: "<b>Compare</b> them two at a time to build your ranking.",
       customLabel: "Missing a value?",
       customHint: "Add up to two of your own (optional).",
@@ -341,6 +343,7 @@
       resultTitle: "Your values, in order",
       top: "Top 5",
       ext: "Extended",
+      rest: "Other finalists (unranked)",
       copy: "Copy list",
       share: "Share",
       copied: "List copied!",
@@ -428,22 +431,24 @@
     S.screen = "result";
   }
 
-  // Binary insertion sort, one human comparison at a time.
+  // Binary insertion sort, one human comparison at a time. Only the top KEEP
+  // positions are searched: a value that loses to #KEEP joins the unranked tail.
   function pick(candidateWins) {
     const r = S.rank;
     const mid = (r.lo + r.hi) >> 1;
     if (candidateWins) r.hi = mid; else r.lo = mid + 1;
     r.count++;
     if (r.lo >= r.hi) {
-      r.sorted.splice(r.lo, 0, r.items[r.k]);
+      if (r.lo >= KEEP) r.sorted.push(r.items[r.k]);
+      else r.sorted.splice(r.lo, 0, r.items[r.k]);
       r.k++;
-      r.lo = 0; r.hi = r.sorted.length;
+      r.lo = 0; r.hi = Math.min(r.sorted.length, KEEP);
       if (r.k >= r.items.length) finishRank();
     }
   }
 
   function shareText() {
-    const lines = S.final.map((id, i) => `${i + 1}. ${label(id)}`);
+    const lines = S.final.slice(0, KEEP).map((id, i) => `${i + 1}. ${label(id)}`);
     return `${t("shareHeader")}\n${lines.join("\n")}`;
   }
 
@@ -538,7 +543,7 @@
     },
 
     result() {
-      const top = S.final.slice(0, MIN), ext = S.final.slice(MIN);
+      const top = S.final.slice(0, MIN), ext = S.final.slice(MIN, KEEP), rest = S.final.slice(KEEP);
       const li = (id, i, cls = "") => `<li class="${cls}" style="animation-delay:${i * 60}ms"><span class="n">${i + 1}</span><span class="v">${esc(label(id))}</span></li>`;
       return `<section class="screen">
         <p class="eyebrow">${t("resultEyebrow")}</p>
@@ -547,6 +552,8 @@
         <ol class="ranked">${top.map((id, i) => li(id, i, i === 0 ? "first" : "")).join("")}</ol>
         ${ext.length ? `<div class="section-label">${t("ext")}</div>
         <ol class="ranked ext">${ext.map((id, i) => li(id, i + MIN)).join("")}</ol>` : ""}
+        ${rest.length ? `<div class="section-label">${t("rest")}</div>
+        <p class="muted rest">${rest.map((id) => esc(label(id))).sort((a, b) => a.localeCompare(b, lang)).join(" · ")}</p>` : ""}
         <div class="actions">
           <button class="btn primary" data-action="copy">${t("copy")}</button>
           ${navigator.share ? `<button class="btn" data-action="share">${t("share")}</button>` : ""}
